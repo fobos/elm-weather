@@ -3,70 +3,103 @@ module App exposing (..)
 import Html exposing (Html, div, input, button, text, ul, li, p, label)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
-import Regex exposing (regex, contains)
+import String
+import Char
 
 
 -- MODEL
 
-type alias Model =
-     List Location
 
-type alias Weather =
-     String
+type alias Model =
+    { zipInput : String
+    , locations : List Location
+    }
+
 
 type alias Location =
     { zip : String
-    , temp : Maybe Weather
+    , temp : Maybe String
     }
 
--- SUBSCRIPTIONS
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
+init : ( Model, Cmd Msg )
+init =
+    ( Model "" [], Cmd.none )
+
+
 
 -- UPDATE
+
 
 type Msg
     = AddLocation
     | ZipChange String
 
-update : Msg -> Model -> (Model, Cmd Msg)
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AddLocation ->
-            ( [], Cmd.none )
+            let
+                { zipInput, locations } =
+                    model
 
-        ZipChange zip ->
-            if contains (regex "^\\d{5}$") zip then
-                ( { zip = zip, temp = Nothing } :: model, Cmd.none)
-            else
-                ( model, Cmd.none )
+                containsZip =
+                    List.any (\l -> l.zip == zipInput)
 
--- INIT
+                needUpdateModel =
+                    String.length zipInput == 5 && (not <| containsZip locations)
 
-init : (Model, Cmd Msg)
-init =
-    ( [], Cmd.none )
+                result =
+                    if needUpdateModel then
+                        ( { model
+                            | zipInput = ""
+                            , locations = (locations ++ [ Location zipInput Nothing ])
+                          }
+                        , Cmd.none
+                        )
+                    else
+                        ( model, Cmd.none )
+            in
+                result
+
+        ZipChange input ->
+            ( { model | zipInput = String.filter Char.isDigit input }, Cmd.none )
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
+
+
 
 -- VIEW
 
+
 view : Model -> Html Msg
-view model =
+view { zipInput, locations } =
     div [ id "app-container" ]
         ([ div [ id "form" ]
-            [ label [] [ text "Zip Code:"]
-            , input [ placeholder "Enter Zip",  onInput ZipChange] []
+            [ label [] [ text "Zip Code:" ]
+            , input [ placeholder "Enter Zip", value zipInput, onInput ZipChange ] []
             , button [ onClick AddLocation ] [ text "Add location" ]
             ]
-        ] ++ (List.map viewLocation model))
+         ]
+            ++ (List.map viewLocation locations)
+        )
+
 
 viewLocation : Location -> Html msg
 viewLocation location =
     let
-        locationTemp = Maybe.withDefault "0" location.temp
+        locationTemp =
+            Maybe.withDefault "0" location.temp
     in
         div [ class "location", id ("zip-" ++ location.zip) ]
             [ p [ class "zip" ] [ text location.zip ]
-            , p [ class "temp" ] [ text locationTemp, text "℃"]
+            , p [ class "temp" ] [ text locationTemp, text "℃" ]
             ]
