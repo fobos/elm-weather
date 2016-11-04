@@ -5,6 +5,9 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import String
 import Char
+import Http
+import Json.Decode as Json
+import Task
 
 
 -- MODEL
@@ -34,6 +37,8 @@ init =
 type Msg
     = AddLocation
     | ZipChange String
+    | FetchSucceed String Float
+    | FetchFail Http.Error
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -54,9 +59,9 @@ update msg model =
                     if needUpdateModel then
                         ( { model
                             | zipInput = ""
-                            , locations = (locations ++ [ Location zipInput Nothing ])
+                            , locations = (locations ++ [ Location zipInput (Just "...") ])
                           }
-                        , Cmd.none
+                        , fetchWeather zipInput
                         )
                     else
                         ( model, Cmd.none )
@@ -65,6 +70,54 @@ update msg model =
 
         ZipChange input ->
             ( { model | zipInput = String.filter Char.isDigit input }, Cmd.none )
+
+        FetchSucceed zipCode temp ->
+            let
+                updateLocation =
+                    updateLocationTempByZip zipCode (toString temp)
+
+                locations_ =
+                    List.filterMap updateLocation model.locations
+            in
+                ( { model | locations = locations_ }, Cmd.none )
+
+        FetchFail err ->
+            case err of
+                Http.UnexpectedPayload str ->
+                    Debug.log str ( model, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+
+updateLocationTempByZip : String -> String -> Location -> Maybe Location
+updateLocationTempByZip zipCode temp location =
+    if location.zip == zipCode then
+        Just { location | temp = Just temp }
+    else
+        Just location
+
+
+
+-- HTTP
+
+
+fetchWeather : String -> Cmd Msg
+fetchWeather zipCode =
+    let
+        url =
+            Http.url "http://api.openweathermap.org/data/2.5/weather"
+                [ ( "zip", zipCode ++ ",us" )
+                , ( "units", "metric" )
+                , ( "APPID", "cbbf2cace105ede143a9d7becd38400c" )
+                ]
+    in
+        Task.perform FetchFail (FetchSucceed zipCode) (Http.get decodeWeatherResponse url)
+
+
+decodeWeatherResponse : Json.Decoder Float
+decodeWeatherResponse =
+    Json.at [ "main", "temp" ] Json.float
 
 
 
@@ -97,7 +150,7 @@ viewLocation : Location -> Html msg
 viewLocation location =
     let
         locationTemp =
-            Maybe.withDefault "0" location.temp
+            Maybe.withDefault "err" location.temp
     in
         div [ class "location", id ("zip-" ++ location.zip) ]
             [ p [ class "zip" ] [ text location.zip ]
