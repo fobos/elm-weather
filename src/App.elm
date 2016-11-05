@@ -8,6 +8,7 @@ import Char
 import Http
 import Json.Decode as Json
 import Task
+import Time
 
 
 -- MODEL
@@ -21,7 +22,7 @@ type alias Model =
 
 type alias Location =
     { zip : String
-    , temp : Maybe String
+    , temp : Maybe Float
     }
 
 
@@ -39,6 +40,7 @@ type Msg
     | ZipChange String
     | FetchSucceed Location Float
     | FetchFail Http.Error
+    | UpdateWeather Time.Time
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -68,28 +70,36 @@ update msg model =
         ZipChange input ->
             ( { model | zipInput = String.filter Char.isDigit input }, Cmd.none )
 
+        UpdateWeather _ ->
+            let
+                commands =
+                    List.map fetchWeather model.locations
+            in
+                ( model, Cmd.batch commands )
+
         FetchSucceed location temp ->
             let
+                updateLocation =
+                    updateLocationTempByZip location.zip temp
+
                 locations_ =
-                    model.locations ++ [ { location | temp = Just (toString temp) } ]
+                    if List.member location model.locations then
+                        List.map updateLocation model.locations
+                    else
+                        model.locations ++ [ { location | temp = Just temp } ]
             in
                 ( { model | locations = locations_ }, Cmd.none )
 
-        FetchFail err ->
-            case err of
-                Http.UnexpectedPayload str ->
-                    Debug.log str ( model, Cmd.none )
-
-                _ ->
-                    ( model, Cmd.none )
+        FetchFail _ ->
+            ( model, Cmd.none )
 
 
-updateLocationTempByZip : String -> String -> Location -> Maybe Location
+updateLocationTempByZip : String -> Float -> Location -> Location
 updateLocationTempByZip zipCode temp location =
     if location.zip == zipCode then
-        Just { location | temp = Just temp }
+        { location | temp = Just temp }
     else
-        Just location
+        location
 
 
 
@@ -123,7 +133,10 @@ decodeWeatherResponse =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    if List.isEmpty model.locations then
+        Sub.none
+    else
+        Time.every (20 * Time.second) UpdateWeather
 
 
 
@@ -146,10 +159,15 @@ view { zipInput, locations } =
 viewLocation : Location -> Html msg
 viewLocation location =
     let
-        locationTemp =
-            Maybe.withDefault "err" location.temp
+        temp =
+            case location.temp of
+                Just temp ->
+                    toString temp
+
+                Nothing ->
+                    "err"
     in
         div [ class "location", id ("zip-" ++ location.zip) ]
             [ p [ class "zip" ] [ text location.zip ]
-            , p [ class "temp" ] [ text locationTemp, text "℃" ]
+            , p [ class "temp" ] [ text temp, text "℃" ]
             ]
