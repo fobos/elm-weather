@@ -37,7 +37,7 @@ init =
 type Msg
     = AddLocation
     | ZipChange String
-    | FetchSucceed String Float
+    | FetchSucceed Location Float
     | FetchFail Http.Error
 
 
@@ -57,11 +57,8 @@ update msg model =
 
                 result =
                     if needUpdateModel then
-                        ( { model
-                            | zipInput = ""
-                            , locations = (locations ++ [ Location zipInput (Just "...") ])
-                          }
-                        , fetchWeather zipInput
+                        ( { model | zipInput = "" }
+                        , fetchWeather (Location zipInput Nothing)
                         )
                     else
                         ( model, Cmd.none )
@@ -71,13 +68,10 @@ update msg model =
         ZipChange input ->
             ( { model | zipInput = String.filter Char.isDigit input }, Cmd.none )
 
-        FetchSucceed zipCode temp ->
+        FetchSucceed location temp ->
             let
-                updateLocation =
-                    updateLocationTempByZip zipCode (toString temp)
-
                 locations_ =
-                    List.filterMap updateLocation model.locations
+                    model.locations ++ [ { location | temp = Just (toString temp) } ]
             in
                 ( { model | locations = locations_ }, Cmd.none )
 
@@ -102,9 +96,12 @@ updateLocationTempByZip zipCode temp location =
 -- HTTP
 
 
-fetchWeather : String -> Cmd Msg
-fetchWeather zipCode =
+fetchWeather : Location -> Cmd Msg
+fetchWeather location =
     let
+        zipCode =
+            location.zip
+
         url =
             Http.url "http://api.openweathermap.org/data/2.5/weather"
                 [ ( "zip", zipCode ++ ",us" )
@@ -112,7 +109,7 @@ fetchWeather zipCode =
                 , ( "APPID", "cbbf2cace105ede143a9d7becd38400c" )
                 ]
     in
-        Task.perform FetchFail (FetchSucceed zipCode) (Http.get decodeWeatherResponse url)
+        Task.perform FetchFail (FetchSucceed location) (Http.get decodeWeatherResponse url)
 
 
 decodeWeatherResponse : Json.Decoder Float
