@@ -1,0 +1,15 @@
+{
+  "name": "elm-weather-heroku",
+  "version": "1.0.0",
+  "description": "Node server to serve static files for elm-weather project",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "alex.biryukoff@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.14.0"
+  }
+}
