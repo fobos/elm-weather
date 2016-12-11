@@ -8,7 +8,7 @@ Try the [demo](http://elm-weather.herokuapp.com)
 
 ## About
 
-- uses Elm v0.17.1
+- uses Elm v0.18
 - built with [create-elm-app](https://github.com/halfzebra/create-elm-app)
 
 ## How to run
@@ -16,8 +16,8 @@ Try the [demo](http://elm-weather.herokuapp.com)
 
 ## Next steps
 
-- Upgrade to Elm v0.18
-- Write some tests
+- [x] Upgrade to Elm v0.18
+- [ ] Write some tests
 
 ## Creation process
 
