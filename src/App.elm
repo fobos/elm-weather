@@ -7,7 +7,6 @@ import String
 import Char
 import Http
 import Json.Decode as Json
-import Task
 import Time
 
 
@@ -38,8 +37,7 @@ init =
 type Msg
     = AddLocation
     | ZipChange String
-    | FetchSucceed Location Float
-    | FetchFail Http.Error
+    | NewWeather Location (Result Http.Error Float)
     | UpdateWeather Time.Time
 
 
@@ -77,7 +75,7 @@ update msg model =
             in
                 ( model, Cmd.batch commands )
 
-        FetchSucceed location temp ->
+        NewWeather location (Ok temp) ->
             let
                 updateLocation =
                     updateLocationTempByZip location.zip temp
@@ -90,7 +88,7 @@ update msg model =
             in
                 ( { model | locations = locations_ }, Cmd.none )
 
-        FetchFail _ ->
+        NewWeather _ (Err _) ->
             ( model, Cmd.none )
 
 
@@ -113,13 +111,14 @@ fetchWeather location =
             location.zip
 
         url =
-            Http.url "http://api.openweathermap.org/data/2.5/weather"
+            buildUrl "http://api.openweathermap.org/data/2.5/weather"
                 [ ( "zip", zipCode ++ ",us" )
                 , ( "units", "metric" )
                 , ( "APPID", "cbbf2cace105ede143a9d7becd38400c" )
                 ]
     in
-        Task.perform FetchFail (FetchSucceed location) (Http.get decodeWeatherResponse url)
+        Http.send (NewWeather location) <|
+            Http.get url decodeWeatherResponse
 
 
 decodeWeatherResponse : Json.Decoder Float
@@ -171,3 +170,23 @@ viewLocation location =
             [ p [ class "zip" ] [ text location.zip ]
             , p [ class "temp" ] [ text temp, text "℃" ]
             ]
+
+
+buildUrl : String -> List ( String, String ) -> String
+buildUrl baseUrl args =
+    case args of
+        [] ->
+            baseUrl
+
+        _ ->
+            baseUrl ++ "?" ++ String.join "&" (List.map queryPair args)
+
+
+queryPair : ( String, String ) -> String
+queryPair ( key, value ) =
+    queryEscape key ++ "=" ++ queryEscape value
+
+
+queryEscape : String -> String
+queryEscape string =
+    String.join "+" (String.split "%20" (Http.encodeUri string))
