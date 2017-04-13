@@ -46,9 +46,19 @@ all =
                                 |> Tuple.first
                     in
                         Expect.equal expectedModel newModel
-              --
-            , test "Passed test" <|
-                \() -> Expect.pass
+            ]
+        , describe "Msg = AddLocation"
+            -- TODO: write fuzz test
+            [ test "do not add empty or invalid zip code" <|
+                \() ->
+                    let
+                        model =
+                            App.Model "" []
+
+                        newModel =
+                            App.update App.AddLocation model
+                    in
+                        Expect.equal newModel ( model, Cmd.none )
             ]
         ]
 
