@@ -27,7 +27,7 @@ all =
                             )
                                 |> Tuple.first
                     in
-                        Expect.equal expectedModel newModel
+                        expectedModel |> Expect.equal newModel
               --
             , fuzz Fuzz.string "filter only digit characters from input" <|
                 \zipInput ->
@@ -45,20 +45,30 @@ all =
                             )
                                 |> Tuple.first
                     in
-                        Expect.equal expectedModel newModel
+                        expectedModel |> Expect.equal newModel
             ]
         , describe "Msg = AddLocation"
-            -- TODO: write fuzz test
-            [ test "do not add empty or invalid zip code" <|
-                \() ->
+            [ fuzz invalidZipFuzzer "do not add empty or invalid zip code" <|
+                \zipCode ->
                     let
                         model =
-                            App.Model "" []
+                            App.Model zipCode []
 
                         newModel =
                             App.update App.AddLocation model
+                                |> Tuple.first
                     in
-                        Expect.equal newModel ( model, Cmd.none )
+                        newModel |> Expect.equal model
+            , test "add correct zip length =5 to state and perform fetch command" <|
+                \() ->
+                    let
+                        newModel =
+                            App.update App.AddLocation (App.Model "11111" [])
+                                |> Tuple.first
+                    in
+                        -- I'm waiting for https://github.com/avh4/elm-testable/ release
+                        -- to write tests on Cmds
+                        newModel |> Expect.equal (App.Model "" [])
             ]
         ]
 
@@ -80,6 +90,21 @@ zipFuzzer =
             Random.frequency
                 [ ( 0.7, Random.int 1 10 )
                 , ( 1, Random.constant 5 )
+                , ( 0.1, Random.constant 0 )
+                ]
+                |> Random.andThen (lengthString numberGenerator)
+    in
+        Fuzz.custom generator Shrink.string
+
+
+invalidZipFuzzer : Fuzzer String
+invalidZipFuzzer =
+    let
+        generator : Generator String
+        generator =
+            Random.frequency
+                [ ( 0.5, Random.int 1 4 )
+                , ( 0.5, Random.int 6 10 )
                 , ( 0.1, Random.constant 0 )
                 ]
                 |> Random.andThen (lengthString numberGenerator)
