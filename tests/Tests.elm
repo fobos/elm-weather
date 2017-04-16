@@ -17,17 +17,12 @@ all =
             [ fuzz zipFuzzer "works with various length zip codes" <|
                 \zipCode ->
                     let
-                        expectedModel =
-                            App.Model zipCode []
-
-                        newModel =
-                            (App.update
-                                (App.ZipChange zipCode)
-                                (App.Model "" [])
-                            )
-                                |> Tuple.first
+                        msg =
+                            App.ZipChange zipCode
                     in
-                        expectedModel |> Expect.equal newModel
+                        App.update msg (App.Model "" [])
+                            |> Tuple.first
+                            |> Expect.equal (App.Model zipCode [])
               --
             , fuzz Fuzz.string "filter only digit characters from input" <|
                 \zipInput ->
@@ -35,17 +30,12 @@ all =
                         numericStr =
                             String.filter Char.isDigit zipInput
 
-                        expectedModel =
-                            App.Model numericStr []
-
-                        newModel =
-                            (App.update
-                                (App.ZipChange zipInput)
-                                (App.Model "" [])
-                            )
-                                |> Tuple.first
+                        msg =
+                            App.ZipChange zipInput
                     in
-                        expectedModel |> Expect.equal newModel
+                        App.update msg (App.Model "" [])
+                            |> Tuple.first
+                            |> Expect.equal (App.Model numericStr [])
             ]
         , describe "Msg = AddLocation"
             [ fuzz invalidZipFuzzer "do not add empty or invalid zip code" <|
@@ -53,22 +43,58 @@ all =
                     let
                         model =
                             App.Model zipCode []
-
-                        newModel =
-                            App.update App.AddLocation model
-                                |> Tuple.first
                     in
-                        newModel |> Expect.equal model
-            , test "add correct zip length =5 to state and perform fetch command" <|
+                        App.update App.AddLocation model
+                            |> Tuple.first
+                            |> Expect.equal model
+            , test "add correct zip length=5 to state and perform fetch command" <|
+                \() ->
+                    -- I'm waiting for https://github.com/avh4/elm-testable/ release
+                    -- to write tests on Cmds
+                    App.update App.AddLocation (App.Model "11111" [])
+                        |> Tuple.first
+                        |> Expect.equal (App.Model "" [])
+            ]
+        , describe "Msg = Update Weather"
+            [ test "create list of Cmd to update weather" <|
+                -- TODO: just after elm-testable relesae
+                \() -> Expect.pass
+            ]
+        , describe "Msg = NewWeater"
+            [ test "add new location with fetched temp to state" <|
                 \() ->
                     let
-                        newModel =
-                            App.update App.AddLocation (App.Model "11111" [])
-                                |> Tuple.first
+                        newLocation =
+                            App.Location "11111" Nothing
+
+                        msg =
+                            App.NewWeather newLocation (Ok 10)
                     in
-                        -- I'm waiting for https://github.com/avh4/elm-testable/ release
-                        -- to write tests on Cmds
-                        newModel |> Expect.equal (App.Model "" [])
+                        App.update msg (App.Model "" [])
+                            |> Tuple.first
+                            |> Expect.all
+                                [ \{ zipInput, locations } ->
+                                    zipInput |> Expect.equal ""
+                                , \{ zipInput, locations } ->
+                                    locations |> Expect.equalLists [ App.Location "11111" (Just 10) ]
+                                ]
+            , test "update existed location with new temp" <|
+                \() ->
+                    let
+                        location =
+                            App.Location "11111" (Just 10)
+
+                        msg =
+                            App.NewWeather location (Ok 20)
+                    in
+                        App.update msg (App.Model "" [ location ])
+                            |> Tuple.first
+                            |> Expect.all
+                                [ \{ zipInput, locations } ->
+                                    zipInput |> Expect.equal ""
+                                , \{ zipInput, locations } ->
+                                    locations |> Expect.equalLists [ App.Location "11111" (Just 20) ]
+                                ]
             ]
         ]
 
