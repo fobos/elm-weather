@@ -1,0 +1,27 @@
+{
+  "name": "elm-weather",
+  "version": "1.0.0",
+  "description": "Weather monitoring written in Elm",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+     "test-e2e": "nightwatch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fobos/elm-weather.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fobos/elm-weather/issues"
+  },
+  "homepage": "https://github.com/fobos/elm-weather#readme",
+  "devDependencies": {
+    "nightwatch": "^0.9.14"
+  }
+}

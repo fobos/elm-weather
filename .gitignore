@@ -13,4 +13,8 @@ node_modules
 # Desktop Services Store on macOS
 .DS_Store
 
+# Ignore e2e test files and folders
+reports
+selenium-debug.log
+
 todo.md
