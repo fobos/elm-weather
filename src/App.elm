@@ -147,8 +147,8 @@ view { zipInput, locations } =
     div [ id "app-container" ]
         ([ div [ id "form" ]
             [ label [] [ text "Zip Code:" ]
-            , input [ placeholder "Enter Zip", value zipInput, onInput ZipChange ] []
-            , button [ onClick AddLocation ] [ text "Add location" ]
+            , input [ class "zip-input", placeholder "Enter Zip", value zipInput, onInput ZipChange ] []
+            , button [ class "button", onClick AddLocation ] [ text "Add location" ]
             ]
          ]
             ++ (List.map viewLocation locations)

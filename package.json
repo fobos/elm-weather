@@ -7,8 +7,10 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-     "test-e2e": "nightwatch"
+    "test": "npm run -s test:unit && npm run -s test:e2e",
+    "test:unit": "elm-app test",
+    "test:run-e2e": "mocha ./tests/e2e/*.spec.js",
+    "test:e2e": "elm-app build && npm run -s test:run-e2e"
   },
   "repository": {
     "type": "git",
@@ -22,6 +24,9 @@
   },
   "homepage": "https://github.com/fobos/elm-weather#readme",
   "devDependencies": {
-    "nightwatch": "^0.9.14"
+    "express": "^4.15.2",
+    "mocha": "^3.2.0",
+    "nightmare": "^2.10.0",
+    "should": "^11.2.1"
   }
 }
