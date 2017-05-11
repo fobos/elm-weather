@@ -10,14 +10,11 @@ Try the [demo](http://elm-weather.herokuapp.com)
 
 - uses Elm v0.18
 - built with [create-elm-app](https://github.com/halfzebra/create-elm-app)
+- unit-tested with [elm-test](https://github.com/elm-community/elm-test)
+- e2e-tested with [nightmare](https://github.com/segmentio/nightmare)
 
 ## How to run
 ...
-
-## Next steps
-
-- [x] Upgrade to Elm v0.18
-- [ ] Write some tests
 
 ## Creation process
 
